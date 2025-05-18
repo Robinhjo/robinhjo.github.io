@@ -1,549 +1,281 @@
 <!DOCTYPE html>
-<html lang="sv">
+<html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Kameraassistent</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>WanderMark - Travel & Tips</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    :root {
-      --background: #f2f2f7;
-      --surface: #ffffff;
-      --text: #1c1c1e;
-      --border: #dcdcdc;
-      --shadow: rgba(0, 0, 0, 0.06);
-      --primary: #007aff;
-      --warning: #ff3b30;
-      --recommendation: #1c1c1e; /* Ändrad från grön till svart */
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      margin: 0; 
+      padding: 0; 
+      background: #f5f5f5; 
+      color: #333;
     }
-
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background-color: var(--background);
-      margin: 0;
-      padding: 40px 20px;
-      color: var(--text);
-    }
-
-    .container {
-      max-width: 460px;
-      margin: auto;
-      background-color: var(--surface);
-      border-radius: 20px;
-      padding: 28px;
-      box-shadow: 0 8px 30px var(--shadow);
-      border: 1.5px solid var(--border);
-    }
-
-    h1 {
-      font-size: 22px;
-      font-weight: 500;
+    header { 
+      background: #007aff; 
+      color: white; 
+      padding: 1rem; 
       text-align: center;
-      margin-bottom: 26px;
-      letter-spacing: 0.5px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
     }
-
-    select {
-      width: 100%;
-      padding: 14px 12px;
-      margin-bottom: 16px;
-      border-radius: 12px;
-      background-color: #f9f9f9;
-      border: 1px solid var(--border);
-      font-size: 16px;
-      color: var(--text);
-      appearance: none;
-      outline: none;
+    main { 
+      padding: 1rem; 
+      max-width: 800px; 
+      margin: 0 auto;
     }
-
-    .row {
-      display: flex;
-      gap: 12px;
+    input, select, textarea { 
+      width: 100%; 
+      padding: 0.8rem; 
+      margin-top: 0.5rem; 
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      font-size: 1rem;
+      box-sizing: border-box;
     }
-
-    .row select {
-      flex: 1;
+    button { 
+      padding: 0.8rem 1.5rem; 
+      margin-top: 1rem; 
+      background: #007aff; 
+      color: white; 
+      border: none; 
+      border-radius: 5px; 
+      cursor: pointer; 
+      font-size: 1rem;
+      transition: background 0.3s;
     }
-
-    button {
-      width: 100%;
-      padding: 14px;
-      background-color: var(--primary);
-      color: #ffffff;
-      font-size: 16px;
-      font-weight: 600;
-      border: none;
-      border-radius: 12px;
-      margin-top: 8px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      transition: all 0.2s;
-    }
-
     button:hover {
-      background-color: #0062cc;
-      cursor: pointer;
-      transform: translateY(-1px);
+      background: #0062cc;
     }
-
-    button:active {
-      transform: translateY(0);
+    .tip { 
+      background: white; 
+      padding: 1.5rem; 
+      margin: 1.5rem 0; 
+      border-radius: 8px; 
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
     }
-
-    .output {
-      margin-top: 30px;
-      padding: 20px;
-      background-color: #f8f9fa;
-      border-radius: 16px;
-      font-size: 15px;
-      line-height: 1.6;
-      transform: scale(0.95);
-      opacity: 0;
-      transition: all 0.3s ease;
-      max-height: 0;
-      overflow: hidden;
+    #map { 
+      height: 300px; 
+      margin: 1.5rem 0; 
+      border-radius: 8px;
+      border: 1px solid #ddd;
     }
-
-    .output.show {
-      transform: scale(1);
-      opacity: 1;
-      max-height: 1000px;
+    img { 
+      max-width: 100%; 
+      height: auto; 
+      border-radius: 4px; 
+      margin: 1rem 0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
-
-    .output b {
-      display: block;
-      margin-top: 10px;
+    .empty-state {
+      text-align: center;
+      padding: 2rem;
+      color: #666;
     }
-
-    .note {
-      font-size: 14px;
-      font-style: italic;
-      color: #6c757d;
-      margin-top: 4px;
-    }
-
-    .warning {
-      color: var(--warning);
-      font-weight: 600;
-    }
-
-    .recommendation {
-      color: var(--recommendation);
-      font-weight: 600;
-      margin-top: 5px;
-    }
-
-    .share-btn {
-      background-color: #000000; /* Ändrad till svart */
-      color: #ffffff; /* Vit text */
-      margin-top: 15px;
-      display: none;
-    }
-
-    .language-switcher {
+    .tip-actions { 
+      margin-top: 1rem; 
       display: flex;
-      justify-content: center;
-      gap: 10px;
-      margin-bottom: 20px;
+      gap: 0.5rem;
     }
-
-    .lang-btn {
-      padding: 5px 15px;
-      border-radius: 20px;
-      background: #e5e5ea;
-      border: none;
-      cursor: pointer;
-      font-size: 14px;
+    .tip-actions button { 
+      padding: 0.5rem 1rem; 
+      margin: 0;
+      font-size: 0.9rem;
     }
-
-    .lang-btn.active {
-      background: var(--primary);
-      color: white;
-    }
-
-    @media (max-width: 480px) {
-      body {
-        padding: 20px 10px;
-      }
-      .container {
-        padding: 20px;
-      }
+    .delete-btn {
+      background: #ff3b30;
     }
   </style>
 </head>
 <body>
 
-<div class="language-switcher">
-  <button class="lang-btn active" onclick="changeLanguage('sv')">SV</button>
-  <button class="lang-btn" onclick="changeLanguage('en')">EN</button>
-</div>
+<header>
+  <h1>WanderMark</h1>
+  <p>Share your travel tips with the world</p>
+</header>
 
-<div class="container">
-  <h1 id="app-title">Kameraassistent</h1>
-
-  <select id="camera" required>
-    <option value="" disabled selected>Välj kameramärke</option>
-    <option>Canon</option>
-    <option>Sony</option>
-    <option>Nikon</option>
-    <option>Fujifilm</option>
-    <option>Panasonic</option>
-    <option>Olympus</option>
-    <option>Pentax</option>
+<main>
+  <h2>Add a Travel Tip</h2>
+  <input type="text" id="place" placeholder="Place name" required />
+  <input type="url" id="image" placeholder="Image URL (optional)" />
+  <input type="text" id="author" placeholder="Your name (optional)" />
+  <select id="category">
+    <option value="photo">Photo Spot</option>
+    <option value="food">Food</option>
+    <option value="nature">Nature</option>
+    <option value="nightlife">Nightlife</option>
+    <option value="culture">Culture</option>
+    <option value="shopping">Shopping</option>
   </select>
+  <textarea id="tip" placeholder="Your tip..." rows="4" required></textarea>
+  <input type="text" id="bring" placeholder="What to bring... (optional)" />
+  <button id="addTipBtn">Add Tip</button>
 
-  <div class="row">
-    <select id="lens" required>
-      <option value="" disabled selected>Välj objektiv</option>
-      <option>24mm</option>
-      <option>35mm</option>
-      <option>50mm</option>
-      <option>85mm</option>
-      <option>135mm</option>
-      <option>70-200mm</option>
-      <option>16-35mm</option>
-      <option>100mm Macro</option>
-    </select>
-    <select id="photoType" required>
-      <option value="" disabled selected>Fototyp</option>
-      <option>Porträtt</option>
-      <option>Landskap</option>
-      <option>Bröllop</option>
-      <option>Sport</option>
-      <option>Produkt</option>
-      <option>Gata</option>
-      <option>Astrofotografi</option>
-      <option>Makro</option>
-      <option>Djur</option>
-      <option>Evenemang</option>
-      <option>Arkitektur</option>
-    </select>
+  <h3>Map View</h3>
+  <div id="map"></div>
+
+  <h3>Travel Tips</h3>
+  <div id="tipsContainer">
+    <div class="empty-state">No tips yet. Be the first to add one!</div>
   </div>
+</main>
 
-  <div class="row">
-    <select id="light" required>
-      <option value="" disabled selected>Ljusförhållanden</option>
-      <option>Soligt</option>
-      <option>Molnigt</option>
-      <option>Gyllene timmen</option>
-      <option>Dålig belysning</option>
-      <option>Natt</option>
-    </select>
-    <select id="wind" required>
-      <option value="" disabled selected>Vind</option>
-      <option>Ingen</option>
-      <option>Lätt bris</option>
-      <option>Mycket vind</option>
-      <option>Hård vind</option>
-    </select>
-  </div>
-
-  <select id="motion" required>
-    <option value="" disabled selected>Rörelse</option>
-    <option>Ingen</option>
-    <option>Långsam</option>
-    <option>Snabb</option>
-  </select>
-
-  <select id="experience" required>
-    <option value="" disabled selected>Erfarenhetsnivå</option>
-    <option>Nybörjare</option>
-    <option>Avancerad</option>
-  </select>
-
-  <button onclick="generateSettings()" id="generate-btn">Generera inställningar</button>
-  <button class="share-btn" onclick="shareSettings()" id="share-btn">Dela inställningar</button>
-
-  <div class="output" id="result"></div>
-</div>
-
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
-  // Språkhantering
-  const translations = {
-    sv: {
-      appTitle: "Kameraassistent",
-      selects: {
-        camera: "Välj kameramärke",
-        lens: "Välj objektiv",
-        photoType: "Fototyp",
-        light: "Ljusf\u00F6rh\u00E5llanden",
-        wind: "Vind",
-        motion: "R\u00F6relse",
-        experience: "Erfarenhetsniv\u00E5"
-      },
-      options: {
-        camera: ["Canon", "Sony", "Nikon", "Fujifilm", "Panasonic", "Olympus", "Pentax"],
-        lens: ["24mm", "35mm", "50mm", "85mm", "135mm", "70-200mm", "16-35mm", "100mm Macro"],
-        photoType: ["Portr\u00E4tt", "Landskap", "Br\u00F6llop", "Sport", "Produkt", "Gata", "Astrofotografi", "Makro", "Djur", "Evenemang", "Arkitektur"],
-        light: ["Soligt", "Molnigt", "Gyllene timmen", "D\u00E5lig belysning", "Natt"],
-        wind: ["Ingen", "L\u00E4tt bris", "Mycket vind", "H\u00E5rd vind"],
-        motion: ["Ingen", "L\u00E5ngsam", "Snabb"],
-        experience: ["Nyb\u00F6rjare", "Avancerad"]
-      },
-      results: {
-        camera: "KAMERA",
-        lens: "OBJEKTIV",
-        aperture: "BL\u00C4NDARE",
-        shutter: "SLUTARHASTIGHET",
-        iso: "ISO",
-        whiteBalance: "VITBALANS",
-        focusMode: "FOKUSL\u00C4GE",
-        tips: "TIPS",
-        warning: "OBS",
-        recommendation: "REKOMMENDERAD LINS FÖR DENNA FOTOTYP"
-      },
-      buttons: {
-        generate: "Generera inst\u00E4llningar",
-        share: "Dela inst\u00E4llningar"
-      },
-      validationError: "V\u00E4nligen fyll i alla f\u00E4lt!"
-    },
-    en: {
-      appTitle: "Camera Assistant",
-      selects: {
-        camera: "Select camera brand",
-        lens: "Select lens",
-        photoType: "Photo type",
-        light: "Light conditions",
-        wind: "Wind",
-        motion: "Subject movement",
-        experience: "Experience level"
-      },
-      options: {
-        camera: ["Canon", "Sony", "Nikon", "Fujifilm", "Panasonic", "Olympus", "Pentax"],
-        lens: ["24mm", "35mm", "50mm", "85mm", "135mm", "70-200mm", "16-35mm", "100mm Macro"],
-        photoType: ["Portrait", "Landscape", "Wedding", "Sports", "Product", "Street", "Astrophotography", "Macro", "Wildlife", "Event", "Architecture"],
-        light: ["Sunny", "Cloudy", "Golden hour", "Low light", "Night"],
-        wind: ["None", "Light breeze", "Windy", "Strong wind"],
-        motion: ["None", "Slow", "Fast"],
-        experience: ["Beginner", "Advanced"]
-      },
-      results: {
-        camera: "CAMERA",
-        lens: "LENS",
-        aperture: "APERTURE",
-        shutter: "SHUTTER SPEED",
-        iso: "ISO",
-        whiteBalance: "WHITE BALANCE",
-        focusMode: "FOCUS MODE",
-        tips: "TIPS",
-        warning: "WARNING",
-        recommendation: "RECOMMENDED LENS FOR THIS PHOTO TYPE"
-      },
-      buttons: {
-        generate: "Generate settings",
-        share: "Share settings"
-      },
-      validationError: "Please fill in all fields!"
-    }
-  };
+  document.addEventListener("DOMContentLoaded", function () {
+    // Initialize map
+    const map = L.map('map').setView([51.505, -0.09], 2);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
 
-  // Ideal lenses för olika fototyper
-  const idealLenses = {
-    "Porträtt": "85mm (för bäst bokeh och naturlig perspektiv)",
-    "Portrait": "85mm (for best bokeh and natural perspective)",
-    "Landskap": "16-35mm (för breda vyer och stor scenedjup)",
-    "Landscape": "16-35mm (for wide views and great depth of field)",
-    "Bröllop": "24-70mm (flexibel zoom för olika situationer)",
-    "Wedding": "24-70mm (flexible zoom for different situations)",
-    "Sport": "70-200mm (för att komma nära actionen på distans)",
-    "Sports": "70-200mm (to get close to the action from a distance)",
-    "Produkt": "50mm (naturlig perspektiv och skarphet)",
-    "Product": "50mm (natural perspective and sharpness)",
-    "Gata": "35mm (bred nog för miljöer, lång nog för detaljer)",
-    "Street": "35mm (wide enough for environments, long enough for details)",
-    "Astrofotografi": "14-24mm (för att fånga stora delar av natthimlen)",
-    "Astrophotography": "14-24mm (to capture large portions of the night sky)",
-    "Makro": "100mm Macro (för extrem närbildsfotografering)",
-    "Macro": "100mm Macro (for extreme close-up photography)",
-    "Djur": "100-400mm (för att komma nära vilda djur på säkert avstånd)",
-    "Wildlife": "100-400mm (to get close to wild animals at a safe distance)",
-    "Evenemang": "24-105mm (allround-zoom för varierade förhållanden)",
-    "Event": "24-105mm (all-around zoom for varied conditions)",
-    "Arkitektur": "16-35mm (för breda vyer och minimal perspektivförvrängning)",
-    "Architecture": "16-35mm (for wide views and minimal perspective distortion)"
-  };
-
-  let currentLanguage = 'sv';
-
-  function changeLanguage(lang) {
-    currentLanguage = lang;
-    const langData = translations[lang];
+    // Load tips from localStorage
+    let tips = JSON.parse(localStorage.getItem('wanderTips') || [];
+    const tipsContainer = document.getElementById('tipsContainer');
     
-    // Uppdatera titel och knappar
-    document.getElementById('app-title').textContent = langData.appTitle;
-    document.getElementById('generate-btn').textContent = langData.buttons.generate;
-    document.getElementById('share-btn').textContent = langData.buttons.share;
-    
-    // Uppdatera select-fält
-    updateSelect('camera', langData.selects.camera, langData.options.camera);
-    updateSelect('lens', langData.selects.lens, langData.options.lens);
-    updateSelect('photoType', langData.selects.photoType, langData.options.photoType);
-    updateSelect('light', langData.selects.light, langData.options.light);
-    updateSelect('wind', langData.selects.wind, langData.options.wind);
-    updateSelect('motion', langData.selects.motion, langData.options.motion);
-    updateSelect('experience', langData.selects.experience, langData.options.experience);
-    
-    // Uppdatera språkknappar
-    document.querySelectorAll('.lang-btn').forEach(btn => {
-      btn.classList.toggle('active', btn.textContent === lang.toUpperCase());
-    });
-  }
+    // Display all tips
+    function displayTips() {
+      tipsContainer.innerHTML = '';
+      
+      if (tips.length === 0) {
+        tipsContainer.innerHTML = '<div class="empty-state">No tips yet. Be the first to add one!</div>';
+        return;
+      }
 
-  function updateSelect(selectId, placeholder, options) {
-    const select = document.getElementById(selectId);
-    const currentValue = select.value;
-    
-    select.innerHTML = '';
-    
-    // Lägg till placeholder
-    const disabledOption = document.createElement('option');
-    disabledOption.disabled = true;
-    disabledOption.selected = true;
-    disabledOption.textContent = placeholder;
-    select.appendChild(disabledOption);
-    
-    // Lägg till alternativ
-    options.forEach(option => {
-      const opt = document.createElement('option');
-      opt.value = option;
-      opt.textContent = option;
-      if (opt.value === currentValue) opt.selected = true;
-      select.appendChild(opt);
-    });
-  }
-
-  function generateSettings() {
-    const camera = document.getElementById("camera").value;
-    const lens = document.getElementById("lens").value;
-    const photoType = document.getElementById("photoType").value;
-    const light = document.getElementById("light").value;
-    const wind = document.getElementById("wind").value;
-    const motion = document.getElementById("motion").value;
-    const experience = document.getElementById("experience").value;
-
-    if (!camera || !lens || !photoType || !light || !wind || !motion || !experience) {
-      alert(translations[currentLanguage].validationError);
-      return;
-    }
-
-    const settings = calculateCameraSettings(
-      camera, lens, photoType, light, wind, motion, experience
-    );
-
-    showResults(settings);
-  }
-
-  function calculateCameraSettings(camera, lens, photoType, light, wind, motion, experience) {
-    const lang = translations[currentLanguage].results;
-    let settings = {
-      aperture: "f/4",
-      shutter: "1/125s",
-      iso: 200,
-      whiteBalance: currentLanguage === 'sv' ? "Auto" : "Auto",
-      focusMode: currentLanguage === 'sv' ? "Enkel AF" : "Single AF",
-      tips: "",
-      warning: "",
-      recommendation: idealLenses[photoType] || ""
-    };
-
-    // Anpassa inställningar baserat på fototyp
-    switch(photoType) {
-      case "Porträtt":
-      case "Portrait":
-        settings.aperture = experience === (currentLanguage === 'sv' ? "Nybörjare" : "Beginner") ? "f/2.8" : "f/1.8";
-        settings.shutter = "1/200s";
-        settings.focusMode = currentLanguage === 'sv' ? "Ansiktsdetektering" : "Face detection";
-        settings.tips = currentLanguage === 'sv' ? "Använd öppen bländare för mjuk bakgrund" : "Use wide aperture for soft background";
-        break;
-        
-      case "Bröllop":
-      case "Wedding":
-        settings.aperture = "f/2.8-f/4";
-        settings.shutter = "1/250s";
-        settings.iso = 400;
-        settings.focusMode = currentLanguage === 'sv' ? "Kontinuerlig AF" : "Continuous AF";
-        settings.tips = currentLanguage === 'sv' ? "Bracketa viktiga ögonblick" : "Bracket important moments";
-        break;
-        
-      case "Landskap":
-      case "Landscape":
-        settings.aperture = "f/8-f/11";
-        settings.shutter = "1/60s";
-        settings.iso = 100;
-        settings.focusMode = currentLanguage === 'sv' ? "Manuell" : "Manual";
-        settings.tips = currentLanguage === 'sv' ? "Använd stativ och timer" : "Use tripod and timer";
-        break;
-        
-      case "Sport":
-      case "Sports":
-        settings.aperture = "f/2.8-f/4";
-        settings.shutter = motion === (currentLanguage === 'sv' ? "Snabb" : "Fast") ? "1/1000s" : "1/500s";
-        settings.iso = 800;
-        settings.focusMode = currentLanguage === 'sv' ? "Kontinuerlig AF" : "Continuous AF";
-        break;
-        
-      case "Astrofotografi":
-      case "Astrophotography":
-        settings.aperture = "f/2.8";
-        settings.shutter = "20-30s";
-        settings.iso = 3200;
-        settings.focusMode = currentLanguage === 'sv' ? "Manuell" : "Manual";
-        settings.warning = currentLanguage === 'sv' ? "Kräver stativ och fjärrutlösare" : "Requires tripod and remote";
-        break;
-    }
-
-    // Justera för ljusförhållanden
-    if (light === (currentLanguage === 'sv' ? "Dålig belysning" : "Low light")) {
-      settings.iso = Math.max(settings.iso, 1600);
-      settings.shutter = "1/60s";
-    } else if (light === (currentLanguage === 'sv' ? "Natt" : "Night")) {
-      settings.iso = 3200;
-      settings.shutter = "1/30s";
-    }
-
-    return {
-      ...settings,
-      camera: camera,
-      lens: lens,
-      lang: lang
-    };
-  }
-
-  function showResults(settings) {
-    const resultHTML = `
-      <b>${settings.lang.camera}:</b> ${settings.camera}
-      <b>${settings.lang.lens}:</b> ${settings.lens}
-      <div class="recommendation"><b>${settings.lang.recommendation}:</b> ${settings.recommendation}</div>
-      <b>${settings.lang.aperture}:</b> ${settings.aperture}
-      <b>${settings.lang.shutter}:</b> ${settings.shutter}
-      <b>${settings.lang.iso}:</b> ${settings.iso}
-      <b>${settings.lang.whiteBalance}:</b> ${settings.whiteBalance}
-      <b>${settings.lang.focusMode}:</b> ${settings.focusMode}
-      ${settings.tips ? `<b>${settings.lang.tips}:</b> ${settings.tips}` : ''}
-      ${settings.warning ? `<b class="warning">${settings.lang.warning}:</b> ${settings.warning}` : ''}
-    `;
-
-    const resultElement = document.getElementById("result");
-    resultElement.innerHTML = resultHTML;
-    resultElement.classList.add("show");
-    document.querySelector(".share-btn").style.display = "block";
-  }
-
-  function shareSettings() {
-    const settings = document.getElementById("result").textContent;
-    const title = currentLanguage === 'sv' ? "Mina kamerainställningar" : "My camera settings";
-    
-    if (navigator.share) {
-      navigator.share({
-        title: title,
-        text: settings
+      // Sort by newest first
+      tips.sort((a, b) => new Date(b.date) - new Date(a.date));
+      
+      tips.forEach((tip, index) => {
+        const tipElement = document.createElement('div');
+        tipElement.className = 'tip';
+        tipElement.innerHTML = `
+          <h3>${tip.place} <span style="color: #666; font-size: 0.9em;">(${formatCategory(tip.category)})</span></h3>
+          ${tip.author ? `<p><strong>By:</strong> ${tip.author}</p>` : ''}
+          ${tip.image ? `<img src="${tip.image}" alt="${tip.place}" />` : ''}
+          <p>${tip.tip}</p>
+          ${tip.bring ? `<p><strong>Bring:</strong> ${tip.bring}</p>` : ''}
+          <small style="color: #888;">Added on ${new Date(tip.date).toLocaleDateString()}</small>
+          <div class="tip-actions">
+            <button onclick="showOnMap(${index})">View on Map</button>
+            <button onclick="deleteTip(${index})" class="delete-btn">Delete</button>
+          </div>
+        `;
+        tipsContainer.appendChild(tipElement);
       });
-    } else {
-      prompt(currentLanguage === 'sv' ? "Kopiera inställningar:" : "Copy settings:", settings);
+      
+      // Update map markers
+      updateMapMarkers();
+    }
+
+    // Add new tip
+    document.getElementById('addTipBtn').addEventListener('click', function() {
+      const place = document.getElementById('place').value.trim();
+      const image = document.getElementById('image').value.trim();
+      const author = document.getElementById('author').value.trim();
+      const category = document.getElementById('category').value;
+      const tipText = document.getElementById('tip').value.trim();
+      const bring = document.getElementById('bring').value.trim();
+      
+      if (!place || !tipText) {
+        alert('Please fill in required fields (Place and Tip)');
+        return;
+      }
+      
+      const newTip = {
+        place,
+        image: image || 'https://via.placeholder.com/600x400?text=No+Image',
+        author,
+        category,
+        tip: tipText,
+        bring,
+        date: new Date().toISOString(),
+        lat: 51.505 + (Math.random() - 0.5) * 0.1,
+        lng: -0.09 + (Math.random() - 0.5) * 0.1
+      };
+      
+      tips.push(newTip);
+      localStorage.setItem('wanderTips', JSON.stringify(tips));
+      
+      // Clear form
+      document.getElementById('place').value = '';
+      document.getElementById('image').value = '';
+      document.getElementById('tip').value = '';
+      document.getElementById('bring').value = '';
+      
+      displayTips();
+    });
+
+    // Update map with markers
+    function updateMapMarkers() {
+      // Clear existing markers
+      map.eachLayer(layer => {
+        if (layer instanceof L.Marker) {
+          map.removeLayer(layer);
+        }
+      });
+      
+      // Add new markers
+      tips.forEach(tip => {
+        if (tip.lat && tip.lng) {
+          L.marker([tip.lat, tip.lng])
+            .addTo(map)
+            .bindPopup(`<b>${tip.place}</b><br>${tip.tip}`);
+        }
+      });
+    }
+
+    // Format category
+    function formatCategory(cat) {
+      const categories = {
+        photo: "Photo Spot",
+        food: "Food",
+        nature: "Nature",
+        nightlife: "Nightlife",
+        culture: "Culture",
+        shopping: "Shopping"
+      };
+      return categories[cat] || cat;
+    }
+
+    // Initial display
+    displayTips();
+
+    // Try to get user's location
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(pos => {
+        map.setView([pos.coords.latitude, pos.coords.longitude], 13);
+        L.marker([pos.coords.latitude, pos.coords.longitude])
+          .addTo(map)
+          .bindPopup("You are here")
+          .openPopup();
+      });
+    }
+  });
+
+  // Global functions
+  function showOnMap(index) {
+    const tips = JSON.parse(localStorage.getItem('wanderTips') || '[]');
+    if (tips[index]) {
+      const tip = tips[index];
+      const map = L.map('map');
+      map.setView([tip.lat, tip.lng], 15);
+      L.marker([tip.lat, tip.lng])
+        .addTo(map)
+        .bindPopup(`<b>${tip.place}</b><br>${tip.tip}`)
+        .openPopup();
     }
   }
 
-  // Initiera språk
-  changeLanguage('sv');
+  function deleteTip(index) {
+    if (confirm('Are you sure you want to delete this tip?')) {
+      let tips = JSON.parse(localStorage.getItem('wanderTips') || []);
+      tips.splice(index, 1);
+      localStorage.setItem('wanderTips', JSON.stringify(tips));
+      location.reload(); // Refresh to show updated list
+    }
+  }
 </script>
+
 </body>
 </html>
