@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="sv">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kameraassistent</title>
+  <style>
+    :root {
+      --background: #f2f2f7;
+      --surface: #ffffff;
+      --text: #1c1c1e;
+      --border: #dcdcdc;
+      --shadow: rgba(0, 0, 0, 0.06);
+      --primary: #007aff;
+      --warning: #ff3b30;
+      --recommendation: #1c1c1e; /* Ändrad från grön till svart */
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background-color: var(--background);
+      margin: 0;
+      padding: 40px 20px;
+      color: var(--text);
+    }
+
+    .container {
+      max-width: 460px;
+      margin: auto;
+      background-color: var(--surface);
+      border-radius: 20px;
+      padding: 28px;
+      box-shadow: 0 8px 30px var(--shadow);
+      border: 1.5px solid var(--border);
+    }
+
+    h1 {
+      font-size: 22px;
+      font-weight: 500;
+      text-align: center;
+      margin-bottom: 26px;
+      letter-spacing: 0.5px;
+    }
+
+    select {
+      width: 100%;
+      padding: 14px 12px;
+      margin-bottom: 16px;
+      border-radius: 12px;
+      background-color: #f9f9f9;
+      border: 1px solid var(--border);
+      font-size: 16px;
+      color: var(--text);
+      appearance: none;
+      outline: none;
+    }
+
+    .row {
+      display: flex;
+      gap: 12px;
+    }
+
+    .row select {
+      flex: 1;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      background-color: var(--primary);
+      color: #ffffff;
+      font-size: 16px;
+      font-weight: 600;
+      border: none;
+      border-radius: 12px;
+      margin-top: 8px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      transition: all 0.2s;
+    }
+
+    button:hover {
+      background-color: #0062cc;
+      cursor: pointer;
+      transform: translateY(-1px);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    .output {
+      margin-top: 30px;
+      padding: 20px;
+      background-color: #f8f9fa;
+      border-radius: 16px;
+      font-size: 15px;
+      line-height: 1.6;
+      transform: scale(0.95);
+      opacity: 0;
+      transition: all 0.3s ease;
+      max-height: 0;
+      overflow: hidden;
+    }
+
+    .output.show {
+      transform: scale(1);
+      opacity: 1;
+      max-height: 1000px;
+    }
+
+    .output b {
+      display: block;
+      margin-top: 10px;
+    }
+
+    .note {
+      font-size: 14px;
+      font-style: italic;
+      color: #6c757d;
+      margin-top: 4px;
+    }
+
+    .warning {
+      color: var(--warning);
+      font-weight: 600;
+    }
+
+    .recommendation {
+      color: var(--recommendation);
+      font-weight: 600;
+      margin-top: 5px;
+    }
+
+    .share-btn {
+      background-color: #000000; /* Ändrad till svart */
+      color: #ffffff; /* Vit text */
+      margin-top: 15px;
+      display: none;
+    }
+
+    .language-switcher {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .lang-btn {
+      padding: 5px 15px;
+      border-radius: 20px;
+      background: #e5e5ea;
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .lang-btn.active {
+      background: var(--primary);
+      color: white;
+    }
+
+    @media (max-width: 480px) {
+      body {
+        padding: 20px 10px;
+      }
+      .container {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="language-switcher">
+  <button class="lang-btn active" onclick="changeLanguage('sv')">SV</button>
+  <button class="lang-btn" onclick="changeLanguage('en')">EN</button>
+</div>
+
+<div class="container">
+  <h1 id="app-title">Kameraassistent</h1>
+
+  <select id="camera" required>
+    <option value="" disabled selected>Välj kameramärke</option>
+    <option>Canon</option>
+    <option>Sony</option>
+    <option>Nikon</option>
+    <option>Fujifilm</option>
+    <option>Panasonic</option>
+    <option>Olympus</option>
+    <option>Pentax</option>
+  </select>
+
+  <div class="row">
+    <select id="lens" required>
+      <option value="" disabled selected>Välj objektiv</option>
+      <option>24mm</option>
+      <option>35mm</option>
+      <option>50mm</option>
+      <option>85mm</option>
+      <option>135mm</option>
+      <option>70-200mm</option>
+      <option>16-35mm</option>
+      <option>100mm Macro</option>
+    </select>
+    <select id="photoType" required>
+      <option value="" disabled selected>Fototyp</option>
+      <option>Porträtt</option>
+      <option>Landskap</option>
+      <option>Bröllop</option>
+      <option>Sport</option>
+      <option>Produkt</option>
+      <option>Gata</option>
+      <option>Astrofotografi</option>
+      <option>Makro</option>
+      <option>Djur</option>
+      <option>Evenemang</option>
+      <option>Arkitektur</option>
+    </select>
+  </div>
+
+  <div class="row">
+    <select id="light" required>
+      <option value="" disabled selected>Ljusförhållanden</option>
+      <option>Soligt</option>
+      <option>Molnigt</option>
+      <option>Gyllene timmen</option>
+      <option>Dålig belysning</option>
+      <option>Natt</option>
+    </select>
+    <select id="wind" required>
+      <option value="" disabled selected>Vind</option>
+      <option>Ingen</option>
+      <option>Lätt bris</option>
+      <option>Mycket vind</option>
+      <option>Hård vind</option>
+    </select>
+  </div>
+
+  <select id="motion" required>
+    <option value="" disabled selected>Rörelse</option>
+    <option>Ingen</option>
+    <option>Långsam</option>
+    <option>Snabb</option>
+  </select>
+
+  <select id="experience" required>
+    <option value="" disabled selected>Erfarenhetsnivå</option>
+    <option>Nybörjare</option>
+    <option>Avancerad</option>
+  </select>
+
+  <button onclick="generateSettings()" id="generate-btn">Generera inställningar</button>
+  <button class="share-btn" onclick="shareSettings()" id="share-btn">Dela inställningar</button>
+
+  <div class="output" id="result"></div>
+</div>
+
+<script>
+  // Språkhantering
+  const translations = {
+    sv: {
+      appTitle: "Kameraassistent",
+      selects: {
+        camera: "Välj kameramärke",
+        lens: "Välj objektiv",
+        photoType: "Fototyp",
+        light: "Ljusf\u00F6rh\u00E5llanden",
+        wind: "Vind",
+        motion: "R\u00F6relse",
+        experience: "Erfarenhetsniv\u00E5"
+      },
+      options: {
+        camera: ["Canon", "Sony", "Nikon", "Fujifilm", "Panasonic", "Olympus", "Pentax"],
+        lens: ["24mm", "35mm", "50mm", "85mm", "135mm", "70-200mm", "16-35mm", "100mm Macro"],
+        photoType: ["Portr\u00E4tt", "Landskap", "Br\u00F6llop", "Sport", "Produkt", "Gata", "Astrofotografi", "Makro", "Djur", "Evenemang", "Arkitektur"],
+        light: ["Soligt", "Molnigt", "Gyllene timmen", "D\u00E5lig belysning", "Natt"],
+        wind: ["Ingen", "L\u00E4tt bris", "Mycket vind", "H\u00E5rd vind"],
+        motion: ["Ingen", "L\u00E5ngsam", "Snabb"],
+        experience: ["Nyb\u00F6rjare", "Avancerad"]
+      },
+      results: {
+        camera: "KAMERA",
+        lens: "OBJEKTIV",
+        aperture: "BL\u00C4NDARE",
+        shutter: "SLUTARHASTIGHET",
+        iso: "ISO",
+        whiteBalance: "VITBALANS",
+        focusMode: "FOKUSL\u00C4GE",
+        tips: "TIPS",
+        warning: "OBS",
+        recommendation: "REKOMMENDERAD LINS FÖR DENNA FOTOTYP"
+      },
+      buttons: {
+        generate: "Generera inst\u00E4llningar",
+        share: "Dela inst\u00E4llningar"
+      },
+      validationError: "V\u00E4nligen fyll i alla f\u00E4lt!"
+    },
+    en: {
+      appTitle: "Camera Assistant",
+      selects: {
+        camera: "Select camera brand",
+        lens: "Select lens",
+        photoType: "Photo type",
+        light: "Light conditions",
+        wind: "Wind",
+        motion: "Subject movement",
+        experience: "Experience level"
+      },
+      options: {
+        camera: ["Canon", "Sony", "Nikon", "Fujifilm", "Panasonic", "Olympus", "Pentax"],
+        lens: ["24mm", "35mm", "50mm", "85mm", "135mm", "70-200mm", "16-35mm", "100mm Macro"],
+        photoType: ["Portrait", "Landscape", "Wedding", "Sports", "Product", "Street", "Astrophotography", "Macro", "Wildlife", "Event", "Architecture"],
+        light: ["Sunny", "Cloudy", "Golden hour", "Low light", "Night"],
+        wind: ["None", "Light breeze", "Windy", "Strong wind"],
+        motion: ["None", "Slow", "Fast"],
+        experience: ["Beginner", "Advanced"]
+      },
+      results: {
+        camera: "CAMERA",
+        lens: "LENS",
+        aperture: "APERTURE",
+        shutter: "SHUTTER SPEED",
+        iso: "ISO",
+        whiteBalance: "WHITE BALANCE",
+        focusMode: "FOCUS MODE",
+        tips: "TIPS",
+        warning: "WARNING",
+        recommendation: "RECOMMENDED LENS FOR THIS PHOTO TYPE"
+      },
+      buttons: {
+        generate: "Generate settings",
+        share: "Share settings"
+      },
+      validationError: "Please fill in all fields!"
+    }
+  };
+
+  // Ideal lenses för olika fototyper
+  const idealLenses = {
+    "Porträtt": "85mm (för bäst bokeh och naturlig perspektiv)",
+    "Portrait": "85mm (for best bokeh and natural perspective)",
+    "Landskap": "16-35mm (för breda vyer och stor scenedjup)",
+    "Landscape": "16-35mm (for wide views and great depth of field)",
+    "Bröllop": "24-70mm (flexibel zoom för olika situationer)",
+    "Wedding": "24-70mm (flexible zoom for different situations)",
+    "Sport": "70-200mm (för att komma nära actionen på distans)",
+    "Sports": "70-200mm (to get close to the action from a distance)",
+    "Produkt": "50mm (naturlig perspektiv och skarphet)",
+    "Product": "50mm (natural perspective and sharpness)",
+    "Gata": "35mm (bred nog för miljöer, lång nog för detaljer)",
+    "Street": "35mm (wide enough for environments, long enough for details)",
+    "Astrofotografi": "14-24mm (för att fånga stora delar av natthimlen)",
+    "Astrophotography": "14-24mm (to capture large portions of the night sky)",
+    "Makro": "100mm Macro (för extrem närbildsfotografering)",
+    "Macro": "100mm Macro (for extreme close-up photography)",
+    "Djur": "100-400mm (för att komma nära vilda djur på säkert avstånd)",
+    "Wildlife": "100-400mm (to get close to wild animals at a safe distance)",
+    "Evenemang": "24-105mm (allround-zoom för varierade förhållanden)",
+    "Event": "24-105mm (all-around zoom for varied conditions)",
+    "Arkitektur": "16-35mm (för breda vyer och minimal perspektivförvrängning)",
+    "Architecture": "16-35mm (for wide views and minimal perspective distortion)"
+  };
+
+  let currentLanguage = 'sv';
+
+  function changeLanguage(lang) {
+    currentLanguage = lang;
+    const langData = translations[lang];
+    
+    // Uppdatera titel och knappar
+    document.getElementById('app-title').textContent = langData.appTitle;
+    document.getElementById('generate-btn').textContent = langData.buttons.generate;
+    document.getElementById('share-btn').textContent = langData.buttons.share;
+    
+    // Uppdatera select-fält
+    updateSelect('camera', langData.selects.camera, langData.options.camera);
+    updateSelect('lens', langData.selects.lens, langData.options.lens);
+    updateSelect('photoType', langData.selects.photoType, langData.options.photoType);
+    updateSelect('light', langData.selects.light, langData.options.light);
+    updateSelect('wind', langData.selects.wind, langData.options.wind);
+    updateSelect('motion', langData.selects.motion, langData.options.motion);
+    updateSelect('experience', langData.selects.experience, langData.options.experience);
+    
+    // Uppdatera språkknappar
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.textContent === lang.toUpperCase());
+    });
+  }
+
+  function updateSelect(selectId, placeholder, options) {
+    const select = document.getElementById(selectId);
+    const currentValue = select.value;
+    
+    select.innerHTML = '';
+    
+    // Lägg till placeholder
+    const disabledOption = document.createElement('option');
+    disabledOption.disabled = true;
+    disabledOption.selected = true;
+    disabledOption.textContent = placeholder;
+    select.appendChild(disabledOption);
+    
+    // Lägg till alternativ
+    options.forEach(option => {
+      const opt = document.createElement('option');
+      opt.value = option;
+      opt.textContent = option;
+      if (opt.value === currentValue) opt.selected = true;
+      select.appendChild(opt);
+    });
+  }
+
+  function generateSettings() {
+    const camera = document.getElementById("camera").value;
+    const lens = document.getElementById("lens").value;
+    const photoType = document.getElementById("photoType").value;
+    const light = document.getElementById("light").value;
+    const wind = document.getElementById("wind").value;
+    const motion = document.getElementById("motion").value;
+    const experience = document.getElementById("experience").value;
+
+    if (!camera || !lens || !photoType || !light || !wind || !motion || !experience) {
+      alert(translations[currentLanguage].validationError);
+      return;
+    }
+
+    const settings = calculateCameraSettings(
+      camera, lens, photoType, light, wind, motion, experience
+    );
+
+    showResults(settings);
+  }
+
+  function calculateCameraSettings(camera, lens, photoType, light, wind, motion, experience) {
+    const lang = translations[currentLanguage].results;
+    let settings = {
+      aperture: "f/4",
+      shutter: "1/125s",
+      iso: 200,
+      whiteBalance: currentLanguage === 'sv' ? "Auto" : "Auto",
+      focusMode: currentLanguage === 'sv' ? "Enkel AF" : "Single AF",
+      tips: "",
+      warning: "",
+      recommendation: idealLenses[photoType] || ""
+    };
+
+    // Anpassa inställningar baserat på fototyp
+    switch(photoType) {
+      case "Porträtt":
+      case "Portrait":
+        settings.aperture = experience === (currentLanguage === 'sv' ? "Nybörjare" : "Beginner") ? "f/2.8" : "f/1.8";
+        settings.shutter = "1/200s";
+        settings.focusMode = currentLanguage === 'sv' ? "Ansiktsdetektering" : "Face detection";
+        settings.tips = currentLanguage === 'sv' ? "Använd öppen bländare för mjuk bakgrund" : "Use wide aperture for soft background";
+        break;
+        
+      case "Bröllop":
+      case "Wedding":
+        settings.aperture = "f/2.8-f/4";
+        settings.shutter = "1/250s";
+        settings.iso = 400;
+        settings.focusMode = currentLanguage === 'sv' ? "Kontinuerlig AF" : "Continuous AF";
+        settings.tips = currentLanguage === 'sv' ? "Bracketa viktiga ögonblick" : "Bracket important moments";
+        break;
+        
+      case "Landskap":
+      case "Landscape":
+        settings.aperture = "f/8-f/11";
+        settings.shutter = "1/60s";
+        settings.iso = 100;
+        settings.focusMode = currentLanguage === 'sv' ? "Manuell" : "Manual";
+        settings.tips = currentLanguage === 'sv' ? "Använd stativ och timer" : "Use tripod and timer";
+        break;
+        
+      case "Sport":
+      case "Sports":
+        settings.aperture = "f/2.8-f/4";
+        settings.shutter = motion === (currentLanguage === 'sv' ? "Snabb" : "Fast") ? "1/1000s" : "1/500s";
+        settings.iso = 800;
+        settings.focusMode = currentLanguage === 'sv' ? "Kontinuerlig AF" : "Continuous AF";
+        break;
+        
+      case "Astrofotografi":
+      case "Astrophotography":
+        settings.aperture = "f/2.8";
+        settings.shutter = "20-30s";
+        settings.iso = 3200;
+        settings.focusMode = currentLanguage === 'sv' ? "Manuell" : "Manual";
+        settings.warning = currentLanguage === 'sv' ? "Kräver stativ och fjärrutlösare" : "Requires tripod and remote";
+        break;
+    }
+
+    // Justera för ljusförhållanden
+    if (light === (currentLanguage === 'sv' ? "Dålig belysning" : "Low light")) {
+      settings.iso = Math.max(settings.iso, 1600);
+      settings.shutter = "1/60s";
+    } else if (light === (currentLanguage === 'sv' ? "Natt" : "Night")) {
+      settings.iso = 3200;
+      settings.shutter = "1/30s";
+    }
+
+    return {
+      ...settings,
+      camera: camera,
+      lens: lens,
+      lang: lang
+    };
+  }
+
+  function showResults(settings) {
+    const resultHTML = `
+      <b>${settings.lang.camera}:</b> ${settings.camera}
+      <b>${settings.lang.lens}:</b> ${settings.lens}
+      <div class="recommendation"><b>${settings.lang.recommendation}:</b> ${settings.recommendation}</div>
+      <b>${settings.lang.aperture}:</b> ${settings.aperture}
+      <b>${settings.lang.shutter}:</b> ${settings.shutter}
+      <b>${settings.lang.iso}:</b> ${settings.iso}
+      <b>${settings.lang.whiteBalance}:</b> ${settings.whiteBalance}
+      <b>${settings.lang.focusMode}:</b> ${settings.focusMode}
+      ${settings.tips ? `<b>${settings.lang.tips}:</b> ${settings.tips}` : ''}
+      ${settings.warning ? `<b class="warning">${settings.lang.warning}:</b> ${settings.warning}` : ''}
+    `;
+
+    const resultElement = document.getElementById("result");
+    resultElement.innerHTML = resultHTML;
+    resultElement.classList.add("show");
+    document.querySelector(".share-btn").style.display = "block";
+  }
+
+  function shareSettings() {
+    const settings = document.getElementById("result").textContent;
+    const title = currentLanguage === 'sv' ? "Mina kamerainställningar" : "My camera settings";
+    
+    if (navigator.share) {
+      navigator.share({
+        title: title,
+        text: settings
+      });
+    } else {
+      prompt(currentLanguage === 'sv' ? "Kopiera inställningar:" : "Copy settings:", settings);
+    }
+  }
+
+  // Initiera språk
+  changeLanguage('sv');
+</script>
+</body>
+</html>
